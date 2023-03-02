@@ -29,13 +29,14 @@ if err != nil {
 ### Example
 ```go
 func main() {
-    bist := gobist.New()
+    bist, err := gobist.New()
     if err != nil {
-    log.Fatal(err)
+        log.Fatal(err)
+    }
 
     q, err := bist.GetQuote("TUPRS")
     if err != nil {
-      log.Fatal(err)
+        log.Fatal(err)
     }
 
     fmt.Println(fmt.Sprintf("symbol=%s name=%s price=%f", q.Symbol, q.Name, q.Price))
