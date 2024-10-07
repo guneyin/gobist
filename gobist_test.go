@@ -1,19 +1,26 @@
-package gobist_test
+package gobist
 
 import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/guneyin/gobist"
 )
 
 var (
 	symbol = "TUPRS"
 )
 
+func TestCrumb(t *testing.T) {
+	crumbStr := getYahooCrumb()
+	if crumbStr == "Too Many Requests" {
+		t.Fatalf(crumbStr)
+	} else {
+		t.Logf("crumb: %s", crumbStr)
+	}
+}
+
 func TestBist_GetQuote(t *testing.T) {
-	bist, _ := gobist.New()
+	bist, _ := New()
 
 	q, err := bist.GetQuote(symbol)
 	assertError(t, err)
@@ -25,7 +32,7 @@ func TestBist_GetQuote(t *testing.T) {
 }
 
 func TestBist_GetQuoteWithHistory(t *testing.T) {
-	bist, _ := gobist.New()
+	bist, _ := New()
 
 	q, err := bist.GetQuoteWithHistory(symbol, time.Now().Add(-1*24*time.Hour))
 	assertError(t, err)

@@ -2,16 +2,14 @@ package gobist
 
 import (
 	"time"
-
-	"github.com/guneyin/gobist/internal"
 )
 
 type Bist struct {
-	api *internal.Api
+	api *yahooApi
 }
 
 func New() (*Bist, error) {
-	api, err := internal.NewApi()
+	api, err := newApi()
 	if err != nil {
 		return nil, err
 	}
@@ -19,10 +17,10 @@ func New() (*Bist, error) {
 	return &Bist{api: api}, nil
 }
 
-func (b *Bist) GetQuote(symbol string) (*internal.Quote, error) {
-	return b.api.GetQuote(symbol)
+func (b *Bist) GetQuote(symbol string) (*Quote, error) {
+	return b.api.getQuote(symbol)
 }
 
-func (b *Bist) GetQuoteWithHistory(symbol string, date time.Time) (*internal.Quote, error) {
-	return b.api.GetQuoteWithHistory(symbol, date)
+func (b *Bist) GetQuoteWithHistory(symbol string, date time.Time) (*Quote, error) {
+	return b.api.getQuoteWithHistory(symbol, date)
 }

@@ -1,4 +1,4 @@
-package internal
+package gobist
 
 import (
 	"time"
