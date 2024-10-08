@@ -5,13 +5,13 @@ import (
 )
 
 type Quote struct {
-	Symbol  string
-	Name    string
-	Price   float64
-	History *History
+	Symbol  string   `json:"symbol,omitempty"`
+	Name    string   `json:"name,omitempty"`
+	Price   float64  `json:"price,omitempty"`
+	History *History `json:"history,omitempty"`
 }
 
 type History struct {
-	Date  time.Time
-	Price float64
+	Date  *time.Time `json:"date,omitempty"`
+	Price float64    `json:"price,omitempty"`
 }

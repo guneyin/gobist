@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"github.com/imroc/req/v3"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 const (
-	baseURL     = "https://query2.finance.yahoo.com"
-	crumbPath   = "/v1/test/getcrumb"
-	quotePath   = "/v7/finance/options/%s.IS?crumb=%s"
-	historyPath = "/v8/finance/chart/%s.IS?period1=%v&period2=%v&interval=1m"
+	baseURL   = "https://query2.finance.yahoo.com"
+	crumbPath = "/v1/test/getcrumb"
+	chartPath = "/v8/finance/chart/%s.IS?includeAdjustedClose=true&interval=1d&period1=%v&period2=%v"
 )
 
 var (
-	ErrInvalidPayload = errors.New("INVALID_PAYLOAD")
+	ErrNoDataFound = errors.New("NO_DATA_FOUND")
 )
 
 type yahooApi struct {
@@ -27,8 +27,22 @@ func newApi() (*yahooApi, error) {
 	return &yahooApi{c: newClient()}, nil
 }
 
-func (y *yahooApi) getQuote(symbol string) (*Quote, error) {
+func (y *yahooApi) getQuote(symbol string, date *time.Time) (*Quote, error) {
 	quote := yahooQuote{}
+
+	var (
+		dtAdjusted time.Time
+		dt         string
+	)
+
+	if date != nil {
+		dtAdjusted, _ = time.Parse(time.DateOnly, date.Format("2006-01-02"))
+		dtAdjusted = dtAdjusted.Add(time.Hour * 20)
+
+		dt = strconv.Itoa(int(dtAdjusted.Unix()))
+	}
+
+	url := fmt.Sprintf(chartPath, symbol, dt, dt)
 
 	r, err := y.c.
 		//DevMode().
@@ -36,14 +50,13 @@ func (y *yahooApi) getQuote(symbol string) (*Quote, error) {
 		SetRetryCount(1).
 		SetRetryFixedInterval(1 * time.Second).
 		AddRetryHook(func(resp *req.Response, err error) {
-			crumb = getYahooCrumb()
-			resp.Request.SetURL(fmt.Sprintf(quotePath, symbol, crumb))
+			setYahooCrumb()
 		}).
 		AddRetryCondition(func(resp *req.Response, err error) bool {
 			return resp.StatusCode == http.StatusUnauthorized
 		}).
 		SetSuccessResult(&quote).
-		Get(fmt.Sprintf(quotePath, symbol, crumb))
+		Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -52,44 +65,24 @@ func (y *yahooApi) getQuote(symbol string) (*Quote, error) {
 		return nil, r.Err
 	}
 
-	oc := quote.OptionChain.Result
-	if len(oc) == 0 {
-		return nil, ErrInvalidPayload
+	if len(quote.Chart.Result) == 0 {
+		return nil, ErrNoDataFound
 	}
 
-	q := oc[0].Quote
+	q := quote.Chart.Result[0]
+
+	h := &History{}
+	if date != nil {
+		if len(q.Indicators.Adjclose[0].Adjclose) > 0 {
+			h.Date = &dtAdjusted
+			h.Price = q.Indicators.Adjclose[0].Adjclose[0]
+		}
+	}
 
 	return &Quote{
 		Symbol:  symbol,
-		Name:    q.ShortName,
-		Price:   q.RegularMarketPrice,
-		History: nil,
+		Name:    q.Meta.ShortName,
+		Price:   q.Meta.RegularMarketPrice,
+		History: h,
 	}, nil
-}
-
-func (y *yahooApi) getQuoteWithHistory(symbol string, date time.Time) (*Quote, error) {
-	q, err := y.getQuote(symbol)
-	if err != nil {
-		return nil, err
-	}
-
-	history := yahooHistory{}
-
-	r, err := y.c.R().
-		SetSuccessResult(&history).
-		Get(fmt.Sprintf(historyPath, symbol, date.Unix(), date.Unix()))
-	if err != nil {
-		return nil, err
-	}
-
-	if r.IsErrorState() {
-		return nil, r.Err
-	}
-
-	q.History = &History{
-		Date:  date,
-		Price: history.Close,
-	}
-
-	return q, nil
 }
