@@ -1,6 +1,6 @@
 package gobist
 
-type yahooQuote struct {
+type quote struct {
 	Chart struct {
 		Result []struct {
 			Meta struct {
@@ -65,4 +65,34 @@ type yahooQuote struct {
 		} `json:"result"`
 		Error interface{} `json:"error"`
 	} `json:"chart"`
+}
+
+type symbolListResponse struct {
+	TotalCount int `json:"totalCount"`
+	Data       []struct {
+		S string   `json:"s"`
+		D []string `json:"d"`
+	} `json:"data"`
+	Params struct {
+		Turkey struct {
+			Symbols struct {
+				Query struct {
+					Types []string `json:"types"`
+				} `json:"query"`
+			} `json:"symbols"`
+			Filter []struct {
+				Left      string      `json:"left"`
+				Operation string      `json:"operation"`
+				Right     interface{} `json:"right"`
+			} `json:"filter"`
+			Sort struct {
+				SortBy     string `json:"sortBy"`
+				SortOrder  string `json:"sortOrder"`
+				NullsFirst bool   `json:"nullsFirst"`
+			} `json:"sort"`
+			Options struct {
+				Lang string `json:"lang"`
+			} `json:"options"`
+		} `json:"turkey"`
+	} `json:"params"`
 }

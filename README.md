@@ -20,7 +20,7 @@ if err != nil {
 
 ### Get Quote
 ```go
-q, err := bist.GetQuote("TUPRS")
+q, err := bist.GetQuote([]string{"TUPRS"})
 if err != nil {
     log.Fatal(err)
 }
@@ -29,16 +29,16 @@ if err != nil {
 ### Example
 ```go
 func main() {
-    bist, err := gobist.New()
+    bist := gobist.New()
+    
+    t, _ := time.Parse(time.DateOnly, "2024-09-25")
+    q, err := bist.GetQuoteWithHistory([]string{"TUPRS", "BIMAS", "VESBE", "THYAO"}, t)
     if err != nil {
         log.Fatal(err)
     }
-
-    q, err := bist.GetQuote("TUPRS")
-    if err != nil {
-        log.Fatal(err)
+    
+    for _, item := range q.Items {
+        fmt.Println(fmt.Sprintf("symbol=%s name=%s price=%f, history_price=%f, change=%f", item.Symbol, item.Name, item.Price, item.History.Price, item.History.Change.ByRatio))
     }
-
-    fmt.Println(fmt.Sprintf("symbol=%s name=%s price=%f", q.Symbol, q.Name, q.Price))
 }
 ``` 

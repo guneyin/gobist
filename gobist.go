@@ -3,28 +3,36 @@ package gobist
 import "time"
 
 type Bist struct {
-	api *yahooApi
+	api   *api
+	store Store
 }
 
-func New() (*Bist, error) {
-	api, err := newApi()
-	if err != nil {
-		return nil, err
+func New() *Bist {
+	return &Bist{
+		api:   newApi(),
+		store: newMemoryStore(),
 	}
-
-	return &Bist{api: api}, nil
 }
 
-func (b *Bist) GetQuote(symbol string) (*Quote, error) {
-	return b.api.getQuote(symbol, nil)
+func (b *Bist) WithStore(store Store) *Bist {
+	b.store = store
+	return b
 }
 
-func (b *Bist) GetQuoteWithHistory(symbol string, date ...time.Time) (*Quote, error) {
+func (b *Bist) GetSymbolList() (*SymbolList, error) {
+	return b.api.getSymbolList()
+}
+
+func (b *Bist) GetQuote(symbols []string) (*QuoteList, error) {
+	return b.api.getQuote(symbols, nil)
+}
+
+func (b *Bist) GetQuoteWithHistory(symbols []string, date ...time.Time) (*QuoteList, error) {
 	var dt *time.Time
 
 	if len(date) > 0 {
 		dt = &date[0]
 	}
 
-	return b.api.getQuote(symbol, dt)
+	return b.api.getQuote(symbols, dt)
 }

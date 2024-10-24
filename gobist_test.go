@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	symbol = "TUPRS"
+	symbols = []string{"TUPRS", "BIMAS", "KCHOL"}
 )
 
 func TestCrumb(t *testing.T) {
@@ -20,27 +20,27 @@ func TestCrumb(t *testing.T) {
 }
 
 func TestBist_GetQuote(t *testing.T) {
-	bist, _ := New()
+	bist := New()
 
-	q, err := bist.GetQuote(symbol)
+	q, err := bist.GetQuote(symbols)
 	assertError(t, err)
 	assertNotNil(t, q)
 
 	if q != nil {
-		t.Logf("Symbol=%s Name=%s Price=%f", q.Symbol, q.Name, q.Price)
+		t.Logf(q.ToJson())
 	}
 }
 
 func TestBist_GetQuoteWithHistory(t *testing.T) {
-	bist, _ := New()
+	bist := New()
 
 	d, _ := time.Parse(time.DateOnly, "2024-10-03")
-	q, err := bist.GetQuoteWithHistory(symbol, d)
+	q, err := bist.GetQuoteWithHistory(symbols, d)
 	assertError(t, err)
 	assertNotNil(t, q)
 
 	if q != nil {
-		t.Logf("Symbol=%s Name=%s Current Price=%f History Price=%f Date=%s", q.Symbol, q.Name, q.Price, q.History.Price, q.History.Date.Format(time.DateOnly))
+		t.Logf(q.ToJson())
 	}
 }
 
