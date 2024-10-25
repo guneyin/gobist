@@ -10,29 +10,13 @@ This project aims to provide some useful tools to fetch stock data for BIST via 
 
 ## Usage and Example
 
-### Create Client
-```go
-bist, err := gobist.New()
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-### Get Quote
-```go
-q, err := bist.GetQuote([]string{"TUPRS"})
-if err != nil {
-    log.Fatal(err)
-}
-```
-
 ### Example
 ```go
 func main() {
     bist := gobist.New()
     
-    t, _ := time.Parse(time.DateOnly, "2024-09-25")
-    q, err := bist.GetQuoteWithHistory([]string{"TUPRS", "BIMAS", "VESBE", "THYAO"}, t)
+    dt, _ := time.Parse(time.DateOnly, "2024-09-25")
+    q, err := bist.GetQuoteWithHistory([]string{"TUPRS", "BIMAS", "VESBE", "THYAO"}, dt)
     if err != nil {
         log.Fatal(err)
     }
