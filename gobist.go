@@ -24,15 +24,9 @@ func (b *Bist) GetSymbolList() (*SymbolList, error) {
 }
 
 func (b *Bist) GetQuote(symbols []string) (*QuoteList, error) {
-	return b.api.getQuote(symbols, nil)
+	return b.api.getQuote(symbols)
 }
 
-func (b *Bist) GetQuoteWithHistory(symbols []string, date ...time.Time) (*QuoteList, error) {
-	var dt *time.Time
-
-	if len(date) > 0 {
-		dt = &date[0]
-	}
-
-	return b.api.getQuote(symbols, dt)
+func (b *Bist) GetQuoteWithHistory(symbols []string, period ...time.Time) (*QuoteList, error) {
+	return b.api.getQuote(symbols, period...)
 }

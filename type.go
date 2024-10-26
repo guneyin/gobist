@@ -3,23 +3,49 @@ package gobist
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 )
 
 type Quote struct {
-	Symbol  string   `json:"symbol"`
-	Name    string   `json:"name"`
-	Price   float64  `json:"price"`
-	History *History `json:"history,omitempty"`
+	Symbol  string  `json:"symbol"`
+	Name    string  `json:"name"`
+	Price   float64 `json:"price"`
+	History History `json:"history,omitempty"`
+	Error   string  `json:"error,omitempty"`
+}
+
+func (q *Quote) ToJson() string {
+	d, _ := json.MarshalIndent(q, "", "  ")
+	return string(d)
+}
+
+func (q *Quote) SetError(err string) {
+	q.Error = err
 }
 
 type History struct {
-	Date   *time.Time `json:"date,omitempty"`
-	Price  float64    `json:"price,omitempty"`
-	Change *Change    `json:"change,omitempty"`
+	Begin  HistoryData   `json:"begin,omitempty"`
+	End    HistoryData   `json:"end,omitempty"`
+	Change HistoryChange `json:"change,omitempty"`
 }
 
-type Change struct {
+func (h *History) SetBegin(d string, price float64) {
+	h.Begin = HistoryData{d, price}
+}
+
+func (h *History) SetEnd(d string, price float64) {
+	h.End = HistoryData{d, price}
+}
+
+func (h *History) IsValid() bool {
+	return h.Begin.Date != "" && h.End.Date != ""
+}
+
+type HistoryData struct {
+	Date  string  `json:"date,omitempty"`
+	Price float64 `json:"price,omitempty"`
+}
+
+type HistoryChange struct {
 	ByRatio  float64 `json:"byRatio"`
 	ByAmount float64 `json:"byAmount"`
 }
@@ -36,16 +62,6 @@ type SymbolList struct {
 	Items []Symbol `json:"items"`
 }
 
-type QuoteList struct {
-	Count int     `json:"count"`
-	Items []Quote `json:"items"`
-}
-
-func (q Quote) ToJson() string {
-	d, _ := json.MarshalIndent(q, "", "  ")
-	return string(d)
-}
-
 func (s *SymbolList) fromDTO(d *symbolListResponse) *SymbolList {
 	if d == nil {
 		return s
@@ -59,6 +75,11 @@ func (s *SymbolList) fromDTO(d *symbolListResponse) *SymbolList {
 	}
 
 	return s
+}
+
+type QuoteList struct {
+	Count int     `json:"count"`
+	Items []Quote `json:"items"`
 }
 
 func (ql QuoteList) ToJson() string {
