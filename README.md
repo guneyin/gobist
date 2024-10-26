@@ -8,9 +8,7 @@ This project aims to provide some useful tools to fetch stock data for BIST via 
 
     $ go get github.com/guneyin/gobist
 
-## Usage and Example
-
-### Example
+## Example
 ```go
 func main() {
     bist := gobist.New()
