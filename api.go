@@ -17,7 +17,8 @@ const (
 )
 
 var (
-	ErrNoDataFound = errors.New("NO_DATA_FOUND")
+	ErrNoDataFound         = errors.New("no data found")
+	ErrHistoryDataNotFound = errors.New("history data not found")
 )
 
 type api struct {
@@ -97,8 +98,9 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 		period.SetBegin(dtToday)
 		period.SetEnd(dtToday)
 	case 1:
-		period.SetBegin(adjustDate(dates[0]))
-		period.SetEnd(dtToday)
+		d := adjustDate(dates[0])
+		period.SetBegin(d)
+		period.SetBegin(d)
 	default:
 		period.SetBegin(adjustDate(dates[0]))
 		period.SetEnd(adjustDate(dates[1]))
@@ -115,12 +117,12 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 
 		data, err := a.fetchYahooChart(symbol, period.Begin())
 		if err != nil {
-			q.SetError(err.Error())
+			q.SetError(err)
 			continue
 		}
 
 		if len(data.Chart.Result) == 0 {
-			q.SetError("no data found")
+			q.SetError(ErrNoDataFound)
 			continue
 		}
 
@@ -131,7 +133,12 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 			h := History{}
 
 			if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
-				q.SetError("close price not found")
+				q.SetError(ErrHistoryDataNotFound)
+				continue
+			}
+
+			if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
+				q.SetError(ErrHistoryDataNotFound)
 				continue
 			}
 
@@ -139,15 +146,21 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 
 			data, err = a.fetchYahooChart(symbol, period.End())
 			if err != nil {
-				q.SetError(err.Error())
+				q.SetError(err)
+				continue
+			}
+
+			if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
+				q.SetError(ErrHistoryDataNotFound)
 				continue
 			}
 
 			if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
-				q.SetError("close price not found")
+				q.SetError(ErrHistoryDataNotFound)
 				continue
 			}
-			h.SetEnd(period.Begin(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
+
+			h.SetEnd(period.End(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
 
 			if h.IsValid() {
 				h.Change = HistoryChange{

@@ -18,8 +18,8 @@ func (q *Quote) ToJson() string {
 	return string(d)
 }
 
-func (q *Quote) SetError(err string) {
-	q.Error = err
+func (q *Quote) SetError(err error) {
+	q.Error = err.Error()
 }
 
 type History struct {
