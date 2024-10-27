@@ -11,7 +11,10 @@ var (
 )
 
 func TestCrumb(t *testing.T) {
-	crumbStr := setYahooCrumb()
+	crumbStr, err := setYahooCrumb()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if crumbStr == "Too Many Requests" {
 		t.Fatalf(crumbStr)
 	} else {

@@ -6,6 +6,7 @@ import (
 	"github.com/imroc/req/v3"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -111,67 +112,75 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 		Items: make([]Quote, len(symbols)),
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(len(symbols))
+
 	for i, symbol := range symbols {
-		q := &quoteList.Items[i]
-		q.Symbol = symbol
+		go func(q *Quote) {
+			defer wg.Done()
 
-		data, err := a.fetchYahooChart(symbol, period.Begin())
-		if err != nil {
-			q.SetError(err)
-			continue
-		}
+			q.Symbol = symbol
 
-		if len(data.Chart.Result) == 0 {
-			q.SetError(ErrNoDataFound)
-			continue
-		}
-
-		q.Name = data.Chart.Result[0].Meta.ShortName
-		q.Price = data.Chart.Result[0].Meta.RegularMarketPrice
-
-		if !period.IsSingleDay() {
-			h := History{}
-
-			if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
-				q.SetError(ErrHistoryDataNotFound)
-				continue
-			}
-
-			if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
-				q.SetError(ErrHistoryDataNotFound)
-				continue
-			}
-
-			h.SetBegin(period.Begin(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
-
-			data, err = a.fetchYahooChart(symbol, period.End())
+			data, err := a.fetchYahooChart(symbol, period.Begin())
 			if err != nil {
 				q.SetError(err)
-				continue
+				return
 			}
 
-			if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
-				q.SetError(ErrHistoryDataNotFound)
-				continue
+			if len(data.Chart.Result) == 0 {
+				q.SetError(ErrNoDataFound)
+				return
 			}
 
-			if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
-				q.SetError(ErrHistoryDataNotFound)
-				continue
-			}
+			q.Name = data.Chart.Result[0].Meta.ShortName
+			q.Price = data.Chart.Result[0].Meta.RegularMarketPrice
 
-			h.SetEnd(period.End(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
+			if !period.IsSingleDay() {
+				h := History{}
 
-			if h.IsValid() {
-				h.Change = HistoryChange{
-					ByRatio:  (h.End.Price - h.Begin.Price) * (100 / h.End.Price),
-					ByAmount: h.End.Price - h.Begin.Price,
+				if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
+					q.SetError(ErrHistoryDataNotFound)
+					return
 				}
 
-				q.History = h
+				if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
+					q.SetError(ErrHistoryDataNotFound)
+					return
+				}
+
+				h.SetBegin(period.Begin(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
+
+				data, err = a.fetchYahooChart(symbol, period.End())
+				if err != nil {
+					q.SetError(err)
+					return
+				}
+
+				if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
+					q.SetError(ErrHistoryDataNotFound)
+					return
+				}
+
+				if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
+					q.SetError(ErrHistoryDataNotFound)
+					return
+				}
+
+				h.SetEnd(period.End(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
+
+				if h.IsValid() {
+					h.Change = HistoryChange{
+						ByRatio:  (h.End.Price - h.Begin.Price) * (100 / h.End.Price),
+						ByAmount: h.End.Price - h.Begin.Price,
+					}
+
+					q.History = h
+				}
 			}
-		}
+		}(&quoteList.Items[i])
 	}
+
+	wg.Wait()
 
 	return quoteList, nil
 }
@@ -183,7 +192,7 @@ func (a *api) fetchYahooChart(symbol, dt string) (*quote, error) {
 		SetRetryCount(1).
 		SetRetryFixedInterval(1 * time.Second).
 		AddRetryHook(func(resp *req.Response, err error) {
-			setYahooCrumb()
+			_, err = setYahooCrumb()
 		}).
 		AddRetryCondition(func(resp *req.Response, err error) bool {
 			return resp.StatusCode == http.StatusUnauthorized
@@ -207,16 +216,13 @@ func (a *api) fetchYahooChart(symbol, dt string) (*quote, error) {
 	return data, nil
 }
 
-func setYahooCrumb() string {
+func setYahooCrumb() (string, error) {
 	res, err := req.C().R().Get(yahooCrumbPath)
 	if err != nil {
-		fmt.Printf("crumb error: %v\n", err)
+		return "", fmt.Errorf("crumb error: %v", err)
 	}
 
-	crumb := res.String()
-
-	fmt.Printf("crumb has been set: %v\n", crumb)
-	return crumb
+	return res.String(), nil
 }
 
 func adjustDate(d time.Time) string {
