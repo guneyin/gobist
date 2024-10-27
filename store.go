@@ -3,21 +3,21 @@ package gobist
 import "sync"
 
 type Store interface {
-	Set(key string, value any) error
-	Get(key string) (any, error)
+	Set(key string, value string) error
+	Get(key string) (string, error)
 	Delete(key string) error
 }
 
 type memoryStore struct {
 	mx   sync.Mutex
-	data map[string]any
+	data map[string]string
 }
 
 func newMemoryStore() Store {
-	return &memoryStore{data: make(map[string]any)}
+	return &memoryStore{data: make(map[string]string)}
 }
 
-func (m *memoryStore) Set(key string, value any) error {
+func (m *memoryStore) Set(key string, value string) error {
 	m.mx.Lock()
 	m.data[key] = value
 	m.mx.Unlock()
@@ -25,7 +25,7 @@ func (m *memoryStore) Set(key string, value any) error {
 	return nil
 }
 
-func (m *memoryStore) Get(key string) (any, error) {
+func (m *memoryStore) Get(key string) (string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 

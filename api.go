@@ -25,8 +25,8 @@ type api struct {
 	c *client
 }
 
-func newApi() *api {
-	return &api{c: newClient()}
+func newApi(store Store) *api {
+	return &api{c: newClient(store)}
 }
 
 func (a *api) getSymbolList() (*SymbolList, error) {

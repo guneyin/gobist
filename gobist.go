@@ -8,9 +8,9 @@ type Bist struct {
 }
 
 func New() *Bist {
+	store := newMemoryStore()
 	return &Bist{
-		api:   newApi(),
-		store: newMemoryStore(),
+		api: newApi(store),
 	}
 }
 

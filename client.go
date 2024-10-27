@@ -2,7 +2,6 @@ package gobist
 
 import (
 	"github.com/imroc/req/v3"
-	"go.nhat.io/cookiejar"
 )
 
 const (
@@ -14,19 +13,15 @@ type client struct {
 	general *req.Client
 }
 
-func newClient() *client {
+func newClient(store Store) *client {
 	return &client{
-		yahoo:   newYahooClient(),
+		yahoo:   newYahooClient(store),
 		general: req.NewClient(),
 	}
 }
 
-func newYahooClient() *req.Client {
-	jar := cookiejar.NewPersistentJar(
-		cookiejar.WithFilePath("cookies.json"),
-		cookiejar.WithFilePerm(0755),
-		cookiejar.WithAutoSync(true),
-	)
+func newYahooClient(store Store) *req.Client {
+	jar := newCookieJar(store)
 
 	headers := make(map[string]string)
 	headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
