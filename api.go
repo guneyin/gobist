@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"github.com/imroc/req/v3"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 )
 
 const (
 	yahooCrumbPath = "/v1/test/getcrumb"
-	yahooChartPath = "/v8/finance/chart/%s.IS?includeAdjustedClose=true&interval=1d&period1=%v&period2=%v"
+	yahooChartPath = "/v8/finance/chart/%s.IS?includeAdjustedClose=true&interval=1d&period1=%d&period2=%d"
 
 	twSymbolListUrl = "https://scanner.tradingview.com/turkey/scan"
 )
 
 var (
-	ErrNoDataFound         = errors.New("no data found")
-	ErrHistoryDataNotFound = errors.New("history data not found")
+	errNoDataFound         = errors.New("no data found")
+	errHistoryDataNotFound = errors.New("history data not found")
 )
 
 type api struct {
@@ -67,44 +66,61 @@ func (a *api) getSymbolList() (*SymbolList, error) {
 	return res.fromDTO(&resp), nil
 }
 
-type TPeriod [2]string
+type pdate time.Time
 
-func (p *TPeriod) SetBegin(s string) {
-	p[0] = s
+func (pd *pdate) Set(dt time.Time) {
+	d, _ := time.Parse(time.DateOnly, dt.Format("2006-01-02"))
+	d = d.Add(time.Hour * 20)
+
+	*pd = pdate(d)
 }
 
-func (p *TPeriod) SetEnd(s string) {
-	p[1] = s
+func (pd pdate) String() string {
+	return time.Time(pd).Format("2006-01-02")
 }
 
-func (p *TPeriod) Begin() string {
-	return p[0]
+func (pd pdate) Unix() int64 {
+	return time.Time(pd).Unix()
 }
 
-func (p *TPeriod) End() string {
-	return p[1]
+type period struct {
+	begin, end pdate
 }
 
-func (p *TPeriod) IsSingleDay() bool {
-	return p.Begin() == p.End()
+func (p *period) SetBegin(dt time.Time) {
+	p.begin.Set(dt)
+}
+
+func (p *period) SetEnd(dt time.Time) {
+	p.end.Set(dt)
+}
+
+func (p *period) Begin() pdate {
+	return p.begin
+}
+
+func (p *period) End() pdate {
+	return p.end
+}
+
+func (p *period) IsSingleDay() bool {
+	return p.begin.String() == p.end.String()
 }
 
 func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error) {
-	var period TPeriod
-
-	dtToday := adjustDate(time.Now())
+	var p period
 
 	switch len(dates) {
 	case 0:
-		period.SetBegin(dtToday)
-		period.SetEnd(dtToday)
+		dtToday := time.Now()
+		p.SetBegin(dtToday)
+		p.SetEnd(dtToday)
 	case 1:
-		d := adjustDate(dates[0])
-		period.SetBegin(d)
-		period.SetBegin(d)
+		p.SetBegin(dates[0])
+		p.SetBegin(dates[0])
 	default:
-		period.SetBegin(adjustDate(dates[0]))
-		period.SetEnd(adjustDate(dates[1]))
+		p.SetBegin(dates[0])
+		p.SetEnd(dates[1])
 	}
 
 	quoteList := &QuoteList{
@@ -121,52 +137,52 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 
 			q.Symbol = symbol
 
-			data, err := a.fetchYahooChart(symbol, period.Begin())
+			data, err := a.fetchYahooChart(symbol, p.Begin().Unix())
 			if err != nil {
 				q.SetError(err)
 				return
 			}
 
 			if len(data.Chart.Result) == 0 {
-				q.SetError(ErrNoDataFound)
+				q.SetError(errNoDataFound)
 				return
 			}
 
 			q.Name = data.Chart.Result[0].Meta.ShortName
 			q.Price = data.Chart.Result[0].Meta.RegularMarketPrice
 
-			if !period.IsSingleDay() {
+			if !p.IsSingleDay() {
 				h := History{}
 
 				if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
-					q.SetError(ErrHistoryDataNotFound)
+					q.SetError(errHistoryDataNotFound)
 					return
 				}
 
 				if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
-					q.SetError(ErrHistoryDataNotFound)
+					q.SetError(errHistoryDataNotFound)
 					return
 				}
 
-				h.SetBegin(period.Begin(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
+				h.SetBegin(p.Begin().String(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
 
-				data, err = a.fetchYahooChart(symbol, period.End())
+				data, err = a.fetchYahooChart(symbol, p.End().Unix())
 				if err != nil {
 					q.SetError(err)
 					return
 				}
 
 				if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
-					q.SetError(ErrHistoryDataNotFound)
+					q.SetError(errHistoryDataNotFound)
 					return
 				}
 
 				if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
-					q.SetError(ErrHistoryDataNotFound)
+					q.SetError(errHistoryDataNotFound)
 					return
 				}
 
-				h.SetEnd(period.End(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
+				h.SetEnd(p.End().String(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
 
 				if h.IsValid() {
 					h.Change = HistoryChange{
@@ -185,8 +201,8 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 	return quoteList, nil
 }
 
-func (a *api) fetchYahooChart(symbol, dt string) (*quote, error) {
-	data := &quote{}
+func (a *api) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
+	data := &quoteDTO{}
 
 	rq := a.c.yahoo.R().
 		SetRetryCount(1).
@@ -199,7 +215,7 @@ func (a *api) fetchYahooChart(symbol, dt string) (*quote, error) {
 		}).
 		SetSuccessResult(&data)
 
-	url := fmt.Sprintf(yahooChartPath, symbol, dt, dt)
+	url := fmt.Sprintf(yahooChartPath, symbol, ts, ts)
 	r, err := rq.Get(url)
 	if err != nil {
 		return nil, err
@@ -210,7 +226,7 @@ func (a *api) fetchYahooChart(symbol, dt string) (*quote, error) {
 	}
 
 	if len(data.Chart.Result) == 0 {
-		return nil, ErrNoDataFound
+		return nil, errNoDataFound
 	}
 
 	return data, nil
@@ -223,11 +239,4 @@ func setYahooCrumb() (string, error) {
 	}
 
 	return res.String(), nil
-}
-
-func adjustDate(d time.Time) string {
-	dta, _ := time.Parse(time.DateOnly, d.Format("2006-01-02"))
-	dta = dta.Add(time.Hour * 20)
-
-	return strconv.Itoa(int(dta.Unix()))
 }

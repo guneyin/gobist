@@ -11,35 +11,35 @@ const (
 	cookiesKey = "cookies"
 )
 
-type CookieJar struct {
+type cookieJar struct {
 	jar   http.CookieJar
 	store Store
 
 	cookies []*http.Cookie
 }
 
-var _ http.CookieJar = (*CookieJar)(nil)
+var _ http.CookieJar = (*cookieJar)(nil)
 
-func newCookieJar(store Store) *CookieJar {
+func newCookieJar(store Store) *cookieJar {
 	jar, _ := cookiejar.New(nil)
 
-	return &CookieJar{
+	return &cookieJar{
 		jar:   jar,
 		store: store,
 	}
 }
 
-func (c CookieJar) SetCookies(u *url.URL, cookies []*http.Cookie) {
+func (c cookieJar) SetCookies(u *url.URL, cookies []*http.Cookie) {
 	if err := c.save(); err != nil {
 		c.jar.SetCookies(u, cookies)
 	}
 }
 
-func (c CookieJar) Cookies(u *url.URL) []*http.Cookie {
+func (c cookieJar) Cookies(u *url.URL) []*http.Cookie {
 	return c.jar.Cookies(u)
 }
 
-func (c CookieJar) save() error {
+func (c cookieJar) save() error {
 	data, err := json.Marshal(c.cookies)
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (c CookieJar) save() error {
 	return c.store.Set(cookiesKey, string(data))
 }
 
-func (c CookieJar) load() []*http.Cookie {
+func (c cookieJar) load() []*http.Cookie {
 	data, err := c.store.Get(cookiesKey)
 	if err != nil {
 		return nil

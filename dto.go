@@ -1,6 +1,6 @@
 package gobist
 
-type quote struct {
+type quoteDTO struct {
 	Chart struct {
 		Result []struct {
 			Meta struct {
@@ -57,7 +57,7 @@ type quote struct {
 					Open   []float64 `json:"open"`
 					Low    []float64 `json:"low"`
 					Close  []float64 `json:"close"`
-				} `json:"quote"`
+				} `json:"quoteDTO"`
 				Adjclose []struct {
 					Adjclose []float64 `json:"adjclose"`
 				} `json:"adjclose"`
