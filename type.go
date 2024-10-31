@@ -89,7 +89,7 @@ func (ql QuoteList) ToJson() string {
 
 func parseSymbolData(i int, d []string) Symbol {
 	s := Symbol{
-		Id: i,
+		Id: i + 1,
 	}
 
 	if len(d) != 3 {

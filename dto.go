@@ -67,6 +67,18 @@ type quoteDTO struct {
 	} `json:"chart"`
 }
 
+func (q quoteDTO) adjCloseCheck() bool {
+	if len(q.Chart.Result[0].Indicators.Adjclose) == 0 {
+		return false
+	}
+
+	if len(q.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
+		return false
+	}
+
+	return true
+}
+
 type symbolListResponse struct {
 	TotalCount int `json:"totalCount"`
 	Data       []struct {

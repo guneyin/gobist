@@ -68,6 +68,14 @@ func (a *api) getSymbolList() (*SymbolList, error) {
 
 type pdate time.Time
 
+func (pd *pdate) String() string {
+	return time.Time(*pd).Format("2006-01-02")
+}
+
+func (pd *pdate) Unix() int64 {
+	return time.Time(*pd).Unix()
+}
+
 func (pd *pdate) Set(dt time.Time) {
 	d, _ := time.Parse(time.DateOnly, dt.Format("2006-01-02"))
 	d = d.Add(time.Hour * 20)
@@ -75,32 +83,16 @@ func (pd *pdate) Set(dt time.Time) {
 	*pd = pdate(d)
 }
 
-func (pd pdate) String() string {
-	return time.Time(pd).Format("2006-01-02")
-}
-
-func (pd pdate) Unix() int64 {
-	return time.Time(pd).Unix()
-}
-
 type period struct {
 	begin, end pdate
 }
 
-func (p *period) SetBegin(dt time.Time) {
-	p.begin.Set(dt)
+func (p *period) Begin() *pdate {
+	return &p.begin
 }
 
-func (p *period) SetEnd(dt time.Time) {
-	p.end.Set(dt)
-}
-
-func (p *period) Begin() pdate {
-	return p.begin
-}
-
-func (p *period) End() pdate {
-	return p.end
+func (p *period) End() *pdate {
+	return &p.end
 }
 
 func (p *period) IsSingleDay() bool {
@@ -113,14 +105,14 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 	switch len(dates) {
 	case 0:
 		dtToday := time.Now()
-		p.SetBegin(dtToday)
-		p.SetEnd(dtToday)
+		p.Begin().Set(dtToday)
+		p.End().Set(dtToday)
 	case 1:
-		p.SetBegin(dates[0])
-		p.SetBegin(dates[0])
+		p.Begin().Set(dates[0])
+		p.End().Set(dates[0])
 	default:
-		p.SetBegin(dates[0])
-		p.SetEnd(dates[1])
+		p.Begin().Set(dates[0])
+		p.End().Set(dates[1])
 	}
 
 	quoteList := &QuoteList{
@@ -154,12 +146,7 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 			if !p.IsSingleDay() {
 				h := History{}
 
-				if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
-					q.SetError(errHistoryDataNotFound)
-					return
-				}
-
-				if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
+				if !data.adjCloseCheck() {
 					q.SetError(errHistoryDataNotFound)
 					return
 				}
@@ -172,12 +159,7 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 					return
 				}
 
-				if len(data.Chart.Result[0].Indicators.Adjclose) == 0 {
-					q.SetError(errHistoryDataNotFound)
-					return
-				}
-
-				if len(data.Chart.Result[0].Indicators.Adjclose[0].Adjclose) == 0 {
+				if !data.adjCloseCheck() {
 					q.SetError(errHistoryDataNotFound)
 					return
 				}
