@@ -3,14 +3,15 @@ package gobist
 import (
 	"encoding/json"
 	"fmt"
+	fp "github.com/nikolaydubina/fpmoney"
 )
 
 type Quote struct {
-	Symbol  string  `json:"symbol"`
-	Name    string  `json:"name"`
-	Price   float64 `json:"price"`
-	History History `json:"history,omitempty"`
-	Error   string  `json:"error,omitempty"`
+	Symbol  string    `json:"symbol"`
+	Name    string    `json:"name"`
+	Price   fp.Amount `json:"price"`
+	History History   `json:"history,omitempty"`
+	Error   string    `json:"error,omitempty"`
 }
 
 func (q *Quote) ToJson() string {
@@ -29,11 +30,11 @@ type History struct {
 }
 
 func (h *History) SetBegin(d string, price float64) {
-	h.Begin = HistoryData{d, price}
+	h.Begin = HistoryData{d, fp.FromFloat(price, fp.TRY)}
 }
 
 func (h *History) SetEnd(d string, price float64) {
-	h.End = HistoryData{d, price}
+	h.End = HistoryData{d, fp.FromFloat(price, fp.TRY)}
 }
 
 func (h *History) IsValid() bool {
@@ -41,13 +42,13 @@ func (h *History) IsValid() bool {
 }
 
 type HistoryData struct {
-	Date  string  `json:"date,omitempty"`
-	Price float64 `json:"price,omitempty"`
+	Date  string    `json:"date,omitempty"`
+	Price fp.Amount `json:"price,omitempty"`
 }
 
 type HistoryChange struct {
-	ByRatio  float64 `json:"byRatio"`
-	ByAmount float64 `json:"byAmount"`
+	ByRatio  fp.Amount `json:"byRatio"`
+	ByAmount fp.Amount `json:"byAmount"`
 }
 
 type Symbol struct {

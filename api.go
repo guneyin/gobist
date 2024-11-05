@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/imroc/req/v3"
+	fp "github.com/nikolaydubina/fpmoney"
 	"net/http"
 	"sync"
 	"time"
@@ -141,7 +142,7 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 			}
 
 			q.Name = data.Chart.Result[0].Meta.ShortName
-			q.Price = data.Chart.Result[0].Meta.RegularMarketPrice
+			q.Price = fp.FromFloat(data.Chart.Result[0].Meta.RegularMarketPrice, fp.TRY)
 
 			if !p.IsSingleDay() {
 				h := History{}
@@ -167,9 +168,10 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 				h.SetEnd(p.End().String(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
 
 				if h.IsValid() {
+					ratio := h.End.Price.Sub(h.Begin.Price).Mul(100).Float64() / h.End.Price.Float64()
 					h.Change = HistoryChange{
-						ByRatio:  (h.End.Price - h.Begin.Price) * (100 / h.End.Price),
-						ByAmount: h.End.Price - h.Begin.Price,
+						ByRatio:  fp.FromFloat(ratio, fp.TRY),
+						ByAmount: h.End.Price.Sub(h.Begin.Price),
 					}
 
 					q.History = h
