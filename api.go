@@ -77,11 +77,19 @@ func (pd *pdate) Unix() int64 {
 	return time.Time(*pd).Unix()
 }
 
-func (pd *pdate) Set(dt time.Time) {
-	d, _ := time.Parse(time.DateOnly, dt.Format("2006-01-02"))
-	d = d.Add(time.Hour * 20)
+func isToday(d time.Time) bool {
+	return d.Format(time.DateOnly) == time.Now().Format(time.DateOnly)
+}
 
-	*pd = pdate(d)
+func (pd *pdate) Set(dt time.Time) {
+	if isToday(dt) {
+		dt = time.Now()
+	} else {
+		y, m, d := dt.Date()
+		dt = time.Date(y, m, d, 11, 0, 0, 0, dt.Location())
+	}
+
+	*pd = pdate(dt)
 }
 
 type period struct {
@@ -136,11 +144,6 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 				return
 			}
 
-			if len(data.Chart.Result) == 0 {
-				q.SetError(errNoDataFound)
-				return
-			}
-
 			q.Name = data.Chart.Result[0].Meta.ShortName
 			q.Price = fp.FromFloat(data.Chart.Result[0].Meta.RegularMarketPrice, fp.TRY)
 
@@ -152,7 +155,8 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 					return
 				}
 
-				h.SetBegin(p.Begin().String(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
+				dt, cp := data.getClosePrice()
+				h.SetBegin(dt, cp)
 
 				data, err = a.fetchYahooChart(symbol, p.End().Unix())
 				if err != nil {
@@ -164,8 +168,8 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 					q.SetError(errHistoryDataNotFound)
 					return
 				}
-
-				h.SetEnd(p.End().String(), data.Chart.Result[0].Indicators.Adjclose[0].Adjclose[0])
+				dt, cp = data.getClosePrice()
+				h.SetEnd(dt, cp)
 
 				if h.IsValid() {
 					ratio := h.End.Price.Sub(h.Begin.Price).Mul(100).Float64() / h.End.Price.Float64()
@@ -199,7 +203,8 @@ func (a *api) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
 		}).
 		SetSuccessResult(&data)
 
-	url := fmt.Sprintf(yahooChartPath, symbol, ts, ts)
+	tsBegin := time.Unix(ts, 0).AddDate(0, 0, -15).Unix()
+	url := fmt.Sprintf(yahooChartPath, symbol, tsBegin, ts)
 	r, err := rq.Get(url)
 	if err != nil {
 		return nil, err

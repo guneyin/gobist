@@ -1,5 +1,7 @@
 package gobist
 
+import "time"
+
 type quoteDTO struct {
 	Chart struct {
 		Result []struct {
@@ -77,6 +79,16 @@ func (q quoteDTO) adjCloseCheck() bool {
 	}
 
 	return true
+}
+
+func (q quoteDTO) getClosePrice() (time.Time, float64) {
+	tsSlice := q.Chart.Result[0].Timestamp
+	closeSlice := q.Chart.Result[0].Indicators.Adjclose[0].Adjclose
+
+	ts := tsSlice[len(tsSlice)-1]
+	cp := closeSlice[len(closeSlice)-1]
+
+	return time.Unix(int64(ts), 0), cp
 }
 
 type symbolListResponse struct {

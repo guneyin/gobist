@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	fp "github.com/nikolaydubina/fpmoney"
+	"time"
 )
 
 type Quote struct {
@@ -29,12 +30,12 @@ type History struct {
 	Change HistoryChange `json:"change,omitempty"`
 }
 
-func (h *History) SetBegin(d string, price float64) {
-	h.Begin = HistoryData{d, fp.FromFloat(price, fp.TRY)}
+func (h *History) SetBegin(dt time.Time, price float64) {
+	h.Begin = HistoryData{dt.Format(time.DateOnly), fp.FromFloat(price, fp.TRY)}
 }
 
-func (h *History) SetEnd(d string, price float64) {
-	h.End = HistoryData{d, fp.FromFloat(price, fp.TRY)}
+func (h *History) SetEnd(dt time.Time, price float64) {
+	h.End = HistoryData{dt.Format(time.DateOnly), fp.FromFloat(price, fp.TRY)}
 }
 
 func (h *History) IsValid() bool {
