@@ -19,9 +19,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(fmt.Sprintf("%-10s %-30s %-20s %-20s %-20s %-15s %-30s", "Symbol", "Name", "Current Price", "History Begin", "History End", "Change", "Error"))
+	const layout = "%-10s %-30s %-20s %-20s %-20s %-15s %-30s"
+	fmt.Println(fmt.Sprintf(layout, "Symbol", "Name", "Current Price", "History Begin", "History End", "Change (%)", "Error"))
 	for _, item := range q.Items {
-		fmt.Println(fmt.Sprintf("%-10s %-30s %-20f %-20f %-20f %-15f %-30s",
-			item.Symbol, item.Name, item.Price.Float64(), item.History.Begin.Price.Float64(), item.History.End.Price.Float64(), item.History.Change.ByRatio.Float64(), item.Error))
+		fmt.Println(fmt.Sprintf(layout,
+			item.Symbol, item.Name, item.Price, item.History.Begin.Price,
+			item.History.End.Price, item.History.Change.ByRatio, item.Error))
 	}
 }

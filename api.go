@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/imroc/req/v3"
-	fp "github.com/nikolaydubina/fpmoney"
+	"github.com/shopspring/decimal"
+
 	"net/http"
 	"sync"
 	"time"
@@ -145,7 +146,7 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 			}
 
 			q.Name = data.Chart.Result[0].Meta.ShortName
-			q.Price = fp.FromFloat(data.Chart.Result[0].Meta.RegularMarketPrice, fp.TRY)
+			q.Price = decimal.NewFromFloat(data.Chart.Result[0].Meta.RegularMarketPrice).Truncate(2).String()
 
 			if !p.IsSingleDay() {
 				h := History{}
@@ -172,10 +173,12 @@ func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error)
 				h.SetEnd(dt, cp)
 
 				if h.IsValid() {
-					ratio := h.End.Price.Sub(h.Begin.Price).Mul(100).Float64() / h.End.Price.Float64()
+					bp, _ := decimal.NewFromString(h.Begin.Price)
+					ep, _ := decimal.NewFromString(h.End.Price)
+					ratio := ep.Sub(bp).Mul(decimal.NewFromInt(100)).Div(ep)
 					h.Change = HistoryChange{
-						ByRatio:  fp.FromFloat(ratio, fp.TRY),
-						ByAmount: h.End.Price.Sub(h.Begin.Price),
+						ByRatio:  ratio.Truncate(2).String(),
+						ByAmount: ep.Sub(bp).Truncate(2).String(),
 					}
 
 					q.History = h

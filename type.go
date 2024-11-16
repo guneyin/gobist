@@ -3,16 +3,16 @@ package gobist
 import (
 	"encoding/json"
 	"fmt"
-	fp "github.com/nikolaydubina/fpmoney"
+	"github.com/shopspring/decimal"
 	"time"
 )
 
 type Quote struct {
-	Symbol  string    `json:"symbol"`
-	Name    string    `json:"name"`
-	Price   fp.Amount `json:"price"`
-	History History   `json:"history,omitempty"`
-	Error   string    `json:"error,omitempty"`
+	Symbol  string  `json:"symbol"`
+	Name    string  `json:"name"`
+	Price   string  `json:"price"`
+	History History `json:"history,omitempty"`
+	Error   string  `json:"error,omitempty"`
 }
 
 func (q *Quote) ToJson() string {
@@ -31,11 +31,11 @@ type History struct {
 }
 
 func (h *History) SetBegin(dt time.Time, price float64) {
-	h.Begin = HistoryData{dt.Format(time.DateOnly), fp.FromFloat(price, fp.TRY)}
+	h.Begin = HistoryData{dt.Format(time.DateOnly), decimal.NewFromFloat(price).Truncate(2).String()}
 }
 
 func (h *History) SetEnd(dt time.Time, price float64) {
-	h.End = HistoryData{dt.Format(time.DateOnly), fp.FromFloat(price, fp.TRY)}
+	h.End = HistoryData{dt.Format(time.DateOnly), decimal.NewFromFloat(price).Truncate(2).String()}
 }
 
 func (h *History) IsValid() bool {
@@ -43,13 +43,13 @@ func (h *History) IsValid() bool {
 }
 
 type HistoryData struct {
-	Date  string    `json:"date,omitempty"`
-	Price fp.Amount `json:"price,omitempty"`
+	Date  string `json:"date,omitempty"`
+	Price string `json:"price,omitempty"`
 }
 
 type HistoryChange struct {
-	ByRatio  fp.Amount `json:"byRatio"`
-	ByAmount fp.Amount `json:"byAmount"`
+	ByRatio  string `json:"byRatio"`
+	ByAmount string `json:"byAmount"`
 }
 
 type Symbol struct {

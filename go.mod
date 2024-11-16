@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/imroc/req/v3 v3.46.1
-	github.com/nikolaydubina/fpmoney v1.2.0
+	github.com/shopspring/decimal v1.4.0
 )
 
 require (
@@ -15,7 +15,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
-	github.com/nikolaydubina/fpdecimal v0.19.3 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.2 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.47.0 // indirect
