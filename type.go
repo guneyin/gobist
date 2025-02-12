@@ -3,8 +3,9 @@ package gobist
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type Quote struct {
@@ -15,7 +16,7 @@ type Quote struct {
 	Error   string  `json:"error,omitempty"`
 }
 
-func (q *Quote) ToJson() string {
+func (q *Quote) ToJSON() string {
 	d, _ := json.MarshalIndent(q, "", "  ")
 	return string(d)
 }
@@ -53,7 +54,7 @@ type HistoryChange struct {
 }
 
 type Symbol struct {
-	Id   int    `json:"id"`
+	ID   int    `json:"id"`
 	Code string `json:"code"`
 	Name string `json:"name"`
 	Icon string `json:"icon"`
@@ -84,28 +85,28 @@ type QuoteList struct {
 	Items []Quote `json:"items"`
 }
 
-func (ql QuoteList) ToJson() string {
+func (ql QuoteList) ToJSON() string {
 	d, _ := json.MarshalIndent(ql, "", "  ")
 	return string(d)
 }
 
 func parseSymbolData(i int, d []string) Symbol {
 	s := Symbol{
-		Id: i + 1,
+		ID: i + 1,
 	}
 
 	if len(d) != 3 {
 		return s
 	}
 
-	imgUrl := ""
+	imgURL := ""
 	if d[2] != "" {
-		imgUrl = fmt.Sprintf("https://s3-symbol-logo.tradingview.com/%s.svg", d[2])
+		imgURL = fmt.Sprintf("https://s3-symbol-logo.tradingview.com/%s.svg", d[2])
 	}
 
 	s.Code = d[0]
 	s.Name = d[1]
-	s.Icon = imgUrl
+	s.Icon = imgURL
 
 	return s
 }

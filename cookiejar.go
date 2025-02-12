@@ -47,18 +47,3 @@ func (c cookieJar) save() error {
 
 	return c.store.Set(cookiesKey, string(data))
 }
-
-func (c cookieJar) load() []*http.Cookie {
-	data, err := c.store.Get(cookiesKey)
-	if err != nil {
-		return nil
-	}
-
-	res := make([]*http.Cookie, 0)
-	err = json.Unmarshal([]byte(data), &res)
-	if err != nil {
-		return nil
-	}
-
-	return res
-}

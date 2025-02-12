@@ -3,6 +3,8 @@ package gobist
 import (
 	"errors"
 	"fmt"
+	"log"
+
 	"github.com/imroc/req/v3"
 	"github.com/shopspring/decimal"
 
@@ -15,7 +17,7 @@ const (
 	yahooCrumbPath = "/v1/test/getcrumb"
 	yahooChartPath = "/v8/finance/chart/%s.IS?includeAdjustedClose=true&interval=1d&period1=%d&period2=%d"
 
-	twSymbolListUrl = "https://scanner.tradingview.com/turkey/scan"
+	twSymbolListURL = "https://scanner.tradingview.com/turkey/scan"
 )
 
 var (
@@ -27,7 +29,7 @@ type api struct {
 	c *client
 }
 
-func newApi(store Store) *api {
+func newAPI(store Store) *api {
 	return &api{c: newClient(store)}
 }
 
@@ -54,7 +56,7 @@ func (a *api) getSymbolList() (*SymbolList, error) {
 	r, err := a.c.general.R().
 		SetBodyJsonString(body).
 		SetSuccessResult(&resp).
-		Post(twSymbolListUrl)
+		Post(twSymbolListURL)
 	if err != nil {
 		return nil, err
 	}
@@ -147,62 +149,65 @@ func (a *api) getQuoteList(symbols []string, dates ...time.Time) (*QuoteList, er
 	wg.Add(len(symbols))
 
 	for i, symbol := range symbols {
-		go func(q *Quote) {
-			defer wg.Done()
+		q := &quoteList.Items[i]
+		q.Symbol = symbol
 
-			q.Symbol = symbol
-
-			data, err := a.fetchYahooChart(symbol, p.Begin().Unix())
-			if err != nil {
-				q.SetError(err)
-				return
-			}
-
-			q.Name = data.Chart.Result[0].Meta.ShortName
-			q.Price = decimal.NewFromFloat(data.Chart.Result[0].Meta.RegularMarketPrice).Truncate(2).String()
-
-			if !p.IsSingleDay() {
-				h := History{}
-
-				if !data.adjCloseCheck() {
-					q.SetError(errHistoryDataNotFound)
-					return
-				}
-
-				dt, cp := data.getClosePrice()
-				h.SetBegin(dt, cp)
-
-				data, err = a.fetchYahooChart(symbol, p.End().Unix())
-				if err != nil {
-					q.SetError(err)
-					return
-				}
-
-				if !data.adjCloseCheck() {
-					q.SetError(errHistoryDataNotFound)
-					return
-				}
-				dt, cp = data.getClosePrice()
-				h.SetEnd(dt, cp)
-
-				if h.IsValid() {
-					bp, _ := decimal.NewFromString(h.Begin.Price)
-					ep, _ := decimal.NewFromString(h.End.Price)
-					ratio := ep.Sub(bp).Mul(decimal.NewFromInt(100)).Div(ep)
-					h.Change = HistoryChange{
-						ByRatio:  ratio.Truncate(2).String(),
-						ByAmount: ep.Sub(bp).Truncate(2).String(),
-					}
-
-					q.History = h
-				}
-			}
-		}(&quoteList.Items[i])
+		go a.syncQuote(q, p, &wg)
 	}
 
 	wg.Wait()
 
 	return quoteList, nil
+}
+
+func (a *api) syncQuote(q *Quote, p period, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	data, err := a.fetchYahooChart(q.Symbol, p.Begin().Unix())
+	if err != nil {
+		q.SetError(err)
+		return
+	}
+
+	q.Name = data.Chart.Result[0].Meta.ShortName
+	q.Price = decimal.NewFromFloat(data.Chart.Result[0].Meta.RegularMarketPrice).Truncate(2).String()
+
+	if !p.IsSingleDay() {
+		h := History{}
+
+		if !data.adjCloseCheck() {
+			q.SetError(errHistoryDataNotFound)
+			return
+		}
+
+		dt, cp := data.getClosePrice()
+		h.SetBegin(dt, cp)
+
+		data, err = a.fetchYahooChart(q.Symbol, p.End().Unix())
+		if err != nil {
+			q.SetError(err)
+			return
+		}
+
+		if !data.adjCloseCheck() {
+			q.SetError(errHistoryDataNotFound)
+			return
+		}
+		dt, cp = data.getClosePrice()
+		h.SetEnd(dt, cp)
+
+		if h.IsValid() {
+			bp, _ := decimal.NewFromString(h.Begin.Price)
+			ep, _ := decimal.NewFromString(h.End.Price)
+			ratio := ep.Sub(bp).Mul(decimal.NewFromInt(100)).Div(ep)
+			h.Change = HistoryChange{
+				ByRatio:  ratio.Truncate(2).String(),
+				ByAmount: ep.Sub(bp).Truncate(2).String(),
+			}
+
+			q.History = h
+		}
+	}
 }
 
 func (a *api) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
@@ -211,10 +216,17 @@ func (a *api) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
 	rq := a.c.yahoo.R().
 		SetRetryCount(1).
 		SetRetryFixedInterval(1 * time.Second).
-		AddRetryHook(func(resp *req.Response, err error) {
-			_, err = setYahooCrumb()
+		AddRetryHook(func(_ *req.Response, _ error) {
+			_, err := setYahooCrumb()
+			if err != nil {
+				log.Printf("failed to set yahoo crumb: %v", err)
+			}
 		}).
 		AddRetryCondition(func(resp *req.Response, err error) bool {
+			if err != nil {
+				log.Printf("failed to set yahoo crumb: %v", err)
+			}
+
 			return resp.StatusCode == http.StatusUnauthorized
 		}).
 		SetSuccessResult(&data)
@@ -240,7 +252,7 @@ func (a *api) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
 func setYahooCrumb() (string, error) {
 	res, err := req.C().R().Get(yahooCrumbPath)
 	if err != nil {
-		return "", fmt.Errorf("crumb error: %v", err)
+		return "", fmt.Errorf("crumb error: %w", err)
 	}
 
 	return res.String(), nil

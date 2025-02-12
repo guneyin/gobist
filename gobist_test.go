@@ -1,9 +1,11 @@
-package gobist
+package gobist_test
 
 import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/guneyin/gobist"
 )
 
 var (
@@ -11,31 +13,31 @@ var (
 )
 
 func TestCrumb(t *testing.T) {
-	crumbStr, err := setYahooCrumb()
+	crumbStr, err := gobist.SetYahooCrumb()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if crumbStr == "Too Many Requests" {
-		t.Fatalf(crumbStr)
+		t.Fatal(crumbStr)
 	} else {
 		t.Logf("crumb: %s", crumbStr)
 	}
 }
 
 func TestBist_GetQuote(t *testing.T) {
-	bist := New()
+	bist := gobist.New()
 
 	q, err := bist.GetQuoteList(symbols)
 	assertError(t, err)
 	assertNotNil(t, q)
 
 	if q != nil {
-		t.Logf(q.ToJson())
+		t.Log(q.ToJSON())
 	}
 }
 
 func TestBist_GetQuoteWithHistory(t *testing.T) {
-	bist := New()
+	bist := gobist.New()
 
 	d1, _ := time.Parse(time.DateOnly, "2024-10-06")
 	d2, _ := time.Parse(time.DateOnly, "2024-10-13")
@@ -44,7 +46,7 @@ func TestBist_GetQuoteWithHistory(t *testing.T) {
 	assertNotNil(t, q)
 
 	if q != nil {
-		t.Logf(q.ToJson())
+		t.Log(q.ToJSON())
 	}
 }
 

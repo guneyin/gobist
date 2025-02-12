@@ -27,9 +27,11 @@ func newYahooClient(store Store) *req.Client {
 	headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
 	headers["Host"] = "query2.finance.yahoo.com"
 
+	//nolint:lll
+	ua := `Mozilla/5.0 (Windows NT 10.0; Windows; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36`
 	return req.NewClient().
 		SetCookieJar(jar).
 		SetBaseURL(yahooBaseURL).
 		SetCommonHeaders(headers).
-		SetUserAgent("Mozilla/5.0 (Windows NT 10.0; Windows; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36")
+		SetUserAgent(ua)
 }
