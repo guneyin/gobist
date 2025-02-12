@@ -109,7 +109,20 @@ func (p *period) IsSingleDay() bool {
 	return p.begin.String() == p.end.String()
 }
 
-func (a *api) getQuote(symbols []string, dates ...time.Time) (*QuoteList, error) {
+func (a *api) getQuote(symbol string, dates ...time.Time) (*Quote, error) {
+	list, err := a.getQuoteList([]string{symbol}, dates...)
+	if err != nil {
+		return nil, err
+	}
+
+	if list.Count == 0 {
+		return nil, errHistoryDataNotFound
+	}
+
+	return &list.Items[0], nil
+}
+
+func (a *api) getQuoteList(symbols []string, dates ...time.Time) (*QuoteList, error) {
 	var p period
 
 	switch len(dates) {

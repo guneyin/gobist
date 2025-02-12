@@ -25,7 +25,7 @@ func TestCrumb(t *testing.T) {
 func TestBist_GetQuote(t *testing.T) {
 	bist := New()
 
-	q, err := bist.GetQuote(symbols)
+	q, err := bist.GetQuoteList(symbols)
 	assertError(t, err)
 	assertNotNil(t, q)
 
@@ -39,7 +39,7 @@ func TestBist_GetQuoteWithHistory(t *testing.T) {
 
 	d1, _ := time.Parse(time.DateOnly, "2024-10-06")
 	d2, _ := time.Parse(time.DateOnly, "2024-10-13")
-	q, err := bist.GetQuoteWithHistory(symbols, d1, d2)
+	q, err := bist.GetQuoteList(symbols, d1, d2)
 	assertError(t, err)
 	assertNotNil(t, q)
 

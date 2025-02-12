@@ -14,7 +14,7 @@ func main() {
 	tBegin, _ := time.Parse(time.DateOnly, "2023-10-16")
 	tEnd, _ := time.Parse(time.DateOnly, "2024-10-15")
 
-	q, err := bist.GetQuoteWithHistory([]string{"TUPRS", "BIMAS", "VESBE", "THYAO"}, tBegin, tEnd)
+	q, err := bist.GetQuoteList([]string{"TUPRS", "BIMAS", "VESBE", "THYAO"}, tBegin, tEnd)
 	if err != nil {
 		log.Fatal(err)
 	}
