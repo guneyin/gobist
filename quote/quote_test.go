@@ -26,7 +26,7 @@ func TestCrumb(t *testing.T) {
 	}
 }
 
-func TestBist_GetQuoteWithHistory(t *testing.T) {
+func Test_GetQuoteWithHistory(t *testing.T) {
 	ctx := context.Background()
 	api := quote.NewAPI(store.NewMemoryStore())
 
