@@ -16,12 +16,12 @@ func NewAPI(store store.Store) *API {
 	}
 }
 
-func (a *API) GetQuote(_ context.Context, code string, opts ...OptionFunc) (*Quote, error) {
-	return a.fetcher.GetQuote(code, opts...)
+func (a *API) GetQuote(ctx context.Context, code string, opts ...OptionFunc) (*Quote, error) {
+	return a.fetcher.GetQuote(ctx, code, opts...)
 }
 
-func (a *API) GetQuoteList(_ context.Context, symbols []string, opts ...OptionFunc) (*List, error) {
-	return a.fetcher.GetQuoteList(symbols, opts...)
+func (a *API) GetQuoteList(ctx context.Context, symbols []string, opts ...OptionFunc) (*List, error) {
+	return a.fetcher.GetQuoteList(ctx, symbols, opts...)
 }
 
 func (a *API) GetSymbolList(ctx context.Context) (*SymbolList, error) {

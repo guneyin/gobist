@@ -83,8 +83,8 @@ func (f *fetcher) GetSymbolList(ctx context.Context) (*SymbolList, error) {
 	return res.FromDTO(&resp), nil
 }
 
-func (f *fetcher) GetQuote(symbol string, opts ...OptionFunc) (*Quote, error) {
-	list, err := f.GetQuoteList([]string{symbol}, opts...)
+func (f *fetcher) GetQuote(ctx context.Context, symbol string, opts ...OptionFunc) (*Quote, error) {
+	list, err := f.GetQuoteList(ctx, []string{symbol}, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (f *fetcher) GetQuote(symbol string, opts ...OptionFunc) (*Quote, error) {
 	return &list.Items[0], nil
 }
 
-func (f *fetcher) GetQuoteList(symbols []string, opts ...OptionFunc) (*List, error) {
+func (f *fetcher) GetQuoteList(ctx context.Context, symbols []string, opts ...OptionFunc) (*List, error) {
 	f.applyOptions(opts...)
 
 	quoteList := &List{
@@ -111,7 +111,7 @@ func (f *fetcher) GetQuoteList(symbols []string, opts ...OptionFunc) (*List, err
 		item := &quoteList.Items[i]
 		item.Symbol = symbol
 
-		go f.syncQuote(item, &wg)
+		go f.syncQuote(ctx, item, &wg)
 	}
 
 	wg.Wait()
@@ -119,10 +119,10 @@ func (f *fetcher) GetQuoteList(symbols []string, opts ...OptionFunc) (*List, err
 	return quoteList, nil
 }
 
-func (f *fetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
+func (f *fetcher) syncQuote(ctx context.Context, q *Quote, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	data, err := f.fetchYahooChart(q.Symbol, f.opt.period.begin.Unix())
+	data, err := f.fetchYahooChart(ctx, q.Symbol, f.opt.period.begin.Unix())
 	if err != nil {
 		q.SetError(err)
 		return
@@ -142,7 +142,7 @@ func (f *fetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
 		dt, cp := data.getClosePrice()
 		h.SetBegin(dt, cp)
 
-		data, err = f.fetchYahooChart(q.Symbol, f.opt.period.end.Unix())
+		data, err = f.fetchYahooChart(ctx, q.Symbol, f.opt.period.end.Unix())
 		if err != nil {
 			q.SetError(err)
 			return
@@ -169,10 +169,11 @@ func (f *fetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
 	}
 }
 
-func (f *fetcher) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
+func (f *fetcher) fetchYahooChart(ctx context.Context, symbol string, ts int64) (*quoteDTO, error) {
 	data := &quoteDTO{}
 
 	rq := f.c.yahoo.R().
+		SetContext(ctx).
 		SetRetryCount(1).
 		SetRetryFixedInterval(1 * time.Second).
 		AddRetryHook(func(_ *req.Response, _ error) {
