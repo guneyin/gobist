@@ -1,6 +1,7 @@
 package quote
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -8,29 +9,43 @@ import (
 	"sync"
 	"time"
 
+	"github.com/guneyin/gobist/store"
+
 	"github.com/imroc/req/v3"
 	"github.com/shopspring/decimal"
 )
 
-type Fetcher struct {
+const (
+	yahooCrumbPath = "/v1/test/getcrumb"
+	yahooChartPath = "/v8/finance/chart/%s.IS?includeAdjustedClose=true&interval=1d&period1=%d&period2=%d"
+
+	twSymbolListURL = "https://scanner.tradingview.com/turkey/scan"
+)
+
+var (
+	errNoDataFound         = errors.New("no data found")
+	errHistoryDataNotFound = errors.New("history data not found")
+)
+
+type fetcher struct {
 	c   *client
 	opt *Option
 }
 
-func newQuoteFetcher(client *client) *Fetcher {
-	return &Fetcher{
-		c:   client,
-		opt: NewDefaultOptions(),
+func newFetcher(store store.Store) *fetcher {
+	return &fetcher{
+		c:   newClient(store),
+		opt: newDefaultOptions(),
 	}
 }
 
-func (f *Fetcher) applyOptions(opts ...OptionFunc) {
+func (f *fetcher) applyOptions(opts ...OptionFunc) {
 	for _, opt := range opts {
 		opt(f)
 	}
 }
 
-func (f *Fetcher) GetSymbolList() (*SymbolList, error) {
+func (f *fetcher) GetSymbolList(ctx context.Context) (*SymbolList, error) {
 	resp := symbolListResponse{}
 	body := `
 		{
@@ -51,6 +66,7 @@ func (f *Fetcher) GetSymbolList() (*SymbolList, error) {
 		}`
 
 	r, err := f.c.general.R().
+		SetContext(ctx).
 		SetBodyJsonString(body).
 		SetSuccessResult(&resp).
 		Post(twSymbolListURL)
@@ -67,7 +83,7 @@ func (f *Fetcher) GetSymbolList() (*SymbolList, error) {
 	return res.FromDTO(&resp), nil
 }
 
-func (f *Fetcher) GetQuote(symbol string, opts ...OptionFunc) (*Quote, error) {
+func (f *fetcher) GetQuote(symbol string, opts ...OptionFunc) (*Quote, error) {
 	list, err := f.GetQuoteList([]string{symbol}, opts...)
 	if err != nil {
 		return nil, err
@@ -80,7 +96,7 @@ func (f *Fetcher) GetQuote(symbol string, opts ...OptionFunc) (*Quote, error) {
 	return &list.Items[0], nil
 }
 
-func (f *Fetcher) GetQuoteList(symbols []string, opts ...OptionFunc) (*List, error) {
+func (f *fetcher) GetQuoteList(symbols []string, opts ...OptionFunc) (*List, error) {
 	f.applyOptions(opts...)
 
 	quoteList := &List{
@@ -103,7 +119,7 @@ func (f *Fetcher) GetQuoteList(symbols []string, opts ...OptionFunc) (*List, err
 	return quoteList, nil
 }
 
-func (f *Fetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
+func (f *fetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	data, err := f.fetchYahooChart(q.Symbol, f.opt.period.begin.Unix())
@@ -153,7 +169,7 @@ func (f *Fetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
 	}
 }
 
-func (f *Fetcher) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
+func (f *fetcher) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
 	data := &quoteDTO{}
 
 	rq := f.c.yahoo.R().

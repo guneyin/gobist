@@ -2,13 +2,13 @@ package quote
 
 import "time"
 
-type OptionFunc func(qf *Fetcher)
+type OptionFunc func(qf *fetcher)
 
 type Option struct {
 	period Period
 }
 
-func NewDefaultOptions() *Option {
+func newDefaultOptions() *Option {
 	opt := &Option{}
 	opt.setPeriod(NewPeriod(time.Now(), time.Now()))
 
@@ -16,7 +16,7 @@ func NewDefaultOptions() *Option {
 }
 
 func WithPeriod(p Period) OptionFunc {
-	return func(qf *Fetcher) {
+	return func(qf *fetcher) {
 		qf.opt.setPeriod(p)
 	}
 }

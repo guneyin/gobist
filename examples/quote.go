@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/guneyin/gobist/quote"
 	"log"
@@ -10,12 +11,15 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	bist := gobist.New()
 
 	tBegin, _ := time.Parse(time.DateOnly, "2024-02-13")
 	tEnd, _ := time.Parse(time.DateOnly, "2025-02-13")
 
-	q, err := bist.GetQuote("TUPRS", quote.WithPeriod(quote.NewPeriod(tBegin, tEnd)))
+	q, err := bist.GetQuote(ctx, "TUPRS", quote.WithPeriod(quote.NewPeriod(tBegin, tEnd)))
 	if err != nil {
 		log.Fatal(err)
 	}
