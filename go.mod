@@ -1,14 +1,18 @@
 module github.com/guneyin/gobist
 
-go 1.22.0
+go 1.23
+
+toolchain go1.23.1
 
 require (
+	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/imroc/req/v3 v3.49.1
 	github.com/shopspring/decimal v1.4.0
 )
 
 require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/cloudflare/circl v1.5.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect

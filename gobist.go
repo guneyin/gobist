@@ -1,7 +1,5 @@
 package gobist
 
-import "time"
-
 type Bist struct {
 	api   *api
 	store Store
@@ -20,12 +18,13 @@ func (b *Bist) WithStore(store Store) *Bist {
 }
 
 func (b *Bist) GetSymbolList() (*SymbolList, error) {
-	return b.api.getSymbolList()
+	return b.api.qf().GetSymbolList()
 }
 
-func (b *Bist) GetQuote(symbols string, period ...time.Time) (*Quote, error) {
-	return b.api.getQuote(symbols, period...)
+func (b *Bist) GetQuote(symbols string, opts ...QuoteOptionFunc) (*Quote, error) {
+	return b.api.qf().GetQuote(symbols, opts...)
 }
-func (b *Bist) GetQuoteList(symbols []string, period ...time.Time) (*QuoteList, error) {
-	return b.api.getQuoteList(symbols, period...)
+
+func (b *Bist) GetQuoteList(symbols []string, opts ...QuoteOptionFunc) (*QuoteList, error) {
+	return b.api.qf().GetQuoteList(symbols, opts...)
 }

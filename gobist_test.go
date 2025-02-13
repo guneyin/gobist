@@ -41,7 +41,7 @@ func TestBist_GetQuoteWithHistory(t *testing.T) {
 
 	d1, _ := time.Parse(time.DateOnly, "2024-10-06")
 	d2, _ := time.Parse(time.DateOnly, "2024-10-13")
-	q, err := bist.GetQuoteList(symbols, d1, d2)
+	q, err := bist.GetQuoteList(symbols, gobist.WithPeriod(gobist.NewPeriod(d1, d2)))
 	assertError(t, err)
 	assertNotNil(t, q)
 

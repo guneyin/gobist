@@ -65,7 +65,7 @@ type SymbolList struct {
 	Items []Symbol `json:"items"`
 }
 
-func (s *SymbolList) fromDTO(d *symbolListResponse) *SymbolList {
+func (s *SymbolList) FromDTO(d *symbolListResponse) *SymbolList {
 	if d == nil {
 		return s
 	}
