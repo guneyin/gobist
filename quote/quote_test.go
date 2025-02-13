@@ -1,9 +1,12 @@
-package gobist_test
+package quote_test
 
 import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/guneyin/gobist/quote"
+	"github.com/guneyin/gobist/store"
 
 	"github.com/guneyin/gobist"
 )
@@ -13,7 +16,7 @@ var (
 )
 
 func TestCrumb(t *testing.T) {
-	crumbStr, err := gobist.SetYahooCrumb()
+	crumbStr, err := quote.SetYahooCrumb()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,11 +40,12 @@ func TestBist_GetQuote(t *testing.T) {
 }
 
 func TestBist_GetQuoteWithHistory(t *testing.T) {
-	bist := gobist.New()
+	yc := quote.NewClient(store.NewMemoryStore())
 
 	d1, _ := time.Parse(time.DateOnly, "2024-10-06")
 	d2, _ := time.Parse(time.DateOnly, "2024-10-13")
-	q, err := bist.GetQuoteList(symbols, gobist.WithPeriod(gobist.NewPeriod(d1, d2)))
+
+	q, err := yc.Fetcher().GetQuoteList(symbols, quote.WithPeriod(quote.NewPeriod(d1, d2)))
 	assertError(t, err)
 	assertNotNil(t, q)
 

@@ -1,4 +1,4 @@
-package gobist
+package store
 
 import "sync"
 
@@ -13,7 +13,7 @@ type memoryStore struct {
 	data map[string]string
 }
 
-func newMemoryStore() Store {
+func NewMemoryStore() Store {
 	return &memoryStore{data: make(map[string]string)}
 }
 

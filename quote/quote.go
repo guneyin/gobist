@@ -1,4 +1,4 @@
-package gobist
+package quote
 
 import (
 	"encoding/json"
@@ -80,12 +80,12 @@ func (s *SymbolList) FromDTO(d *symbolListResponse) *SymbolList {
 	return s
 }
 
-type QuoteList struct {
+type List struct {
 	Count int     `json:"count"`
 	Items []Quote `json:"items"`
 }
 
-func (ql QuoteList) ToJSON() string {
+func (ql List) ToJSON() string {
 	d, _ := json.MarshalIndent(ql, "", "  ")
 	return string(d)
 }

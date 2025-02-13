@@ -1,4 +1,4 @@
-package gobist
+package quote
 
 import (
 	"errors"
@@ -12,25 +12,25 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type quoteFetcher struct {
+type Fetcher struct {
 	c   *client
-	opt *QuoteOption
+	opt *Option
 }
 
-func newQuoteFetcher(client *client) *quoteFetcher {
-	return &quoteFetcher{
+func newQuoteFetcher(client *client) *Fetcher {
+	return &Fetcher{
 		c:   client,
 		opt: NewDefaultOptions(),
 	}
 }
 
-func (f *quoteFetcher) applyOptions(opts ...QuoteOptionFunc) {
+func (f *Fetcher) applyOptions(opts ...OptionFunc) {
 	for _, opt := range opts {
 		opt(f)
 	}
 }
 
-func (f *quoteFetcher) GetSymbolList() (*SymbolList, error) {
+func (f *Fetcher) GetSymbolList() (*SymbolList, error) {
 	resp := symbolListResponse{}
 	body := `
 		{
@@ -67,7 +67,7 @@ func (f *quoteFetcher) GetSymbolList() (*SymbolList, error) {
 	return res.FromDTO(&resp), nil
 }
 
-func (f *quoteFetcher) GetQuote(symbol string, opts ...QuoteOptionFunc) (*Quote, error) {
+func (f *Fetcher) GetQuote(symbol string, opts ...OptionFunc) (*Quote, error) {
 	list, err := f.GetQuoteList([]string{symbol}, opts...)
 	if err != nil {
 		return nil, err
@@ -80,10 +80,10 @@ func (f *quoteFetcher) GetQuote(symbol string, opts ...QuoteOptionFunc) (*Quote,
 	return &list.Items[0], nil
 }
 
-func (f *quoteFetcher) GetQuoteList(symbols []string, opts ...QuoteOptionFunc) (*QuoteList, error) {
+func (f *Fetcher) GetQuoteList(symbols []string, opts ...OptionFunc) (*List, error) {
 	f.applyOptions(opts...)
 
-	quoteList := &QuoteList{
+	quoteList := &List{
 		Count: len(symbols),
 		Items: make([]Quote, len(symbols)),
 	}
@@ -103,7 +103,7 @@ func (f *quoteFetcher) GetQuoteList(symbols []string, opts ...QuoteOptionFunc) (
 	return quoteList, nil
 }
 
-func (f *quoteFetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
+func (f *Fetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	data, err := f.fetchYahooChart(q.Symbol, f.opt.period.begin.Unix())
@@ -153,7 +153,7 @@ func (f *quoteFetcher) syncQuote(q *Quote, wg *sync.WaitGroup) {
 	}
 }
 
-func (f *quoteFetcher) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
+func (f *Fetcher) fetchYahooChart(symbol string, ts int64) (*quoteDTO, error) {
 	data := &quoteDTO{}
 
 	rq := f.c.yahoo.R().

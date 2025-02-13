@@ -1,10 +1,12 @@
-package gobist
+package quote
 
 import (
 	"encoding/json"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+
+	"github.com/guneyin/gobist/store"
 )
 
 const (
@@ -13,14 +15,14 @@ const (
 
 type cookieJar struct {
 	jar   http.CookieJar
-	store Store
+	store store.Store
 
 	cookies []*http.Cookie
 }
 
 var _ http.CookieJar = (*cookieJar)(nil)
 
-func newCookieJar(store Store) *cookieJar {
+func newCookieJar(store store.Store) *cookieJar {
 	jar, _ := cookiejar.New(nil)
 
 	return &cookieJar{

@@ -1,7 +1,9 @@
-package gobist
+package quote
 
 import (
 	"errors"
+
+	"github.com/guneyin/gobist/store"
 )
 
 const (
@@ -16,18 +18,18 @@ var (
 	errHistoryDataNotFound = errors.New("history data not found")
 )
 
-type api struct {
+type Client struct {
 	c *client
 }
 
-func newAPI(store Store) *api {
+func NewClient(store store.Store) *Client {
 	c := newClient(store)
 
-	return &api{
+	return &Client{
 		c: c,
 	}
 }
 
-func (a *api) qf() *quoteFetcher {
-	return newQuoteFetcher(a.c)
+func (c *Client) Fetcher() *Fetcher {
+	return newQuoteFetcher(c.c)
 }

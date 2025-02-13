@@ -1,6 +1,7 @@
-package gobist
+package quote
 
 import (
+	"github.com/guneyin/gobist/store"
 	"github.com/imroc/req/v3"
 )
 
@@ -13,14 +14,14 @@ type client struct {
 	general *req.Client
 }
 
-func newClient(store Store) *client {
+func newClient(store store.Store) *client {
 	return &client{
 		yahoo:   newYahooClient(store),
 		general: req.NewClient(),
 	}
 }
 
-func newYahooClient(store Store) *req.Client {
+func newYahooClient(store store.Store) *req.Client {
 	jar := newCookieJar(store)
 
 	headers := make(map[string]string)

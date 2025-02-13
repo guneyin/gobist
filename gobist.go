@@ -1,30 +1,35 @@
 package gobist
 
+import (
+	"github.com/guneyin/gobist/quote"
+	"github.com/guneyin/gobist/store"
+)
+
 type Bist struct {
-	api   *api
-	store Store
+	qc    *quote.Client
+	store store.Store
 }
 
 func New() *Bist {
-	store := newMemoryStore()
+	s := store.NewMemoryStore()
 	return &Bist{
-		api: newAPI(store),
+		qc: quote.NewClient(s),
 	}
 }
 
-func (b *Bist) WithStore(store Store) *Bist {
+func (b *Bist) WithStore(store store.Store) *Bist {
 	b.store = store
 	return b
 }
 
-func (b *Bist) GetSymbolList() (*SymbolList, error) {
-	return b.api.qf().GetSymbolList()
+func (b *Bist) GetSymbolList() (*quote.SymbolList, error) {
+	return b.qc.Fetcher().GetSymbolList()
 }
 
-func (b *Bist) GetQuote(symbols string, opts ...QuoteOptionFunc) (*Quote, error) {
-	return b.api.qf().GetQuote(symbols, opts...)
+func (b *Bist) GetQuote(symbols string, opts ...quote.OptionFunc) (*quote.Quote, error) {
+	return b.qc.Fetcher().GetQuote(symbols, opts...)
 }
 
-func (b *Bist) GetQuoteList(symbols []string, opts ...QuoteOptionFunc) (*QuoteList, error) {
-	return b.api.qf().GetQuoteList(symbols, opts...)
+func (b *Bist) GetQuoteList(symbols []string, opts ...quote.OptionFunc) (*quote.List, error) {
+	return b.qc.Fetcher().GetQuoteList(symbols, opts...)
 }

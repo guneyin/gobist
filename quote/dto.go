@@ -1,4 +1,4 @@
-package gobist
+package quote
 
 import "time"
 

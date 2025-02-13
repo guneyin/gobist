@@ -1,27 +1,27 @@
-package gobist
+package quote
 
 import "time"
 
-type QuoteOptionFunc func(qf *quoteFetcher)
+type OptionFunc func(qf *Fetcher)
 
-type QuoteOption struct {
+type Option struct {
 	period Period
 }
 
-func NewDefaultOptions() *QuoteOption {
-	opt := &QuoteOption{}
+func NewDefaultOptions() *Option {
+	opt := &Option{}
 	opt.setPeriod(NewPeriod(time.Now(), time.Now()))
 
 	return opt
 }
 
-func WithPeriod(p Period) QuoteOptionFunc {
-	return func(qf *quoteFetcher) {
+func WithPeriod(p Period) OptionFunc {
+	return func(qf *Fetcher) {
 		qf.opt.setPeriod(p)
 	}
 }
 
-func (o *QuoteOption) setPeriod(p Period) {
+func (o *Option) setPeriod(p Period) {
 	switch {
 	case p.begin.isZero():
 		dtToday := time.Now()
